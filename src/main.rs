@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::{Command, exit};
 
-fn builtin_cd (args: &mut Iterator<Item=&str>) -> i32 {
+fn builtin_cd(args: &mut Iterator<Item = &str>) -> i32 {
     if let Some(path) = args.nth(0) {
         match env::set_current_dir(Path::new(path)) {
             Ok(()) => 0,
@@ -20,10 +20,10 @@ fn builtin_cd (args: &mut Iterator<Item=&str>) -> i32 {
     }
 }
 
-fn builtin_ls (args: &mut Iterator<Item=&str>) -> i32 {
+fn builtin_ls(args: &mut Iterator<Item = &str>) -> i32 {
     let path = match args.nth(0) {
         Some(p) => p,
-        None => "./"
+        None => "./",
     };
     match fs::read_dir(path) {
         Ok(paths) => {
@@ -31,7 +31,7 @@ fn builtin_ls (args: &mut Iterator<Item=&str>) -> i32 {
                 println!("{}", path.unwrap().file_name().to_str().unwrap());
             }
             0
-        },
+        }
         Err(err) => {
             eprintln!("{}", err.to_string());
             1
@@ -39,15 +39,18 @@ fn builtin_ls (args: &mut Iterator<Item=&str>) -> i32 {
     }
 }
 
-fn do_command(command: &str, mut args: &mut Iterator<Item=&str>) -> i32 {
+fn do_command(command: &str, mut args: &mut Iterator<Item = &str>) -> i32 {
     // List of exit commands
     let exit_commands = vec!["exit", "logout", "bye"];
     // Builtin functions
     // TODO: WTF this dirty type conversion...
-    let builtin_commands: HashMap<_, _> = [
-        ("cd", &builtin_cd as &Fn(&mut Iterator<Item=&str>) -> i32),
-        ("ls", &builtin_ls),
-    ].iter().cloned().collect();
+    let builtin_commands: HashMap<_, _> =
+        [
+            ("cd", &builtin_cd as &Fn(&mut Iterator<Item = &str>) -> i32),
+            ("ls", &builtin_ls),
+        ].iter()
+            .cloned()
+            .collect();
 
     // Exit
     if exit_commands.contains(&command) {
@@ -58,9 +61,7 @@ fn do_command(command: &str, mut args: &mut Iterator<Item=&str>) -> i32 {
     if let Some(builtin_function) = builtin_commands.get(command) {
         builtin_function(&mut args)
     } else {
-        let child = Command::new(command)
-                            .args(args)
-                            .spawn();
+        let child = Command::new(command).args(args).spawn();
         match child {
             Ok(mut child) => child.wait().unwrap().code().unwrap(),
             Err(err) => {
