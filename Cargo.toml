@@ -1,0 +1,6 @@
+[package]
+name = "rust-shell"
+version = "0.1.0"
+authors = ["UTAGAWA Kiki <utagawakiki@gmail.com>"]
+
+[dependencies]
