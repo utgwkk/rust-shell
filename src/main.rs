@@ -10,12 +10,12 @@ fn builtin_cd (args: &mut Iterator<Item=&str>) -> i32 {
         match env::set_current_dir(Path::new(path)) {
             Ok(()) => 0,
             Err(err) => {
-                println!("{}", err.to_string());
+                eprintln!("{}", err.to_string());
                 1
             }
         }
     } else {
-        println!("Specify path.");
+        eprintln!("Specify path.");
         1
     }
 }
@@ -33,7 +33,7 @@ fn builtin_ls (args: &mut Iterator<Item=&str>) -> i32 {
             0
         },
         Err(err) => {
-            println!("{}", err.to_string());
+            eprintln!("{}", err.to_string());
             1
         }
     }
@@ -61,7 +61,7 @@ fn read_eval_print() {
     if let Some(command) = args.nth(0) {
         // Exit
         if exit_commands.contains(&command) {
-            println!("logout");
+            eprintln!("logout");
             exit(0);
         }
         // Execute builtin function
@@ -69,9 +69,9 @@ fn read_eval_print() {
             builtin_function(&mut args);
         } else {
             // Echo command and arguments
-            println!("{}", command);
+            eprintln!("{}", command);
             for arg in args {
-                println!("{}", arg)
+                eprintln!("{}", arg)
             }
         }
     }
