@@ -3,7 +3,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
-use std::process::exit;
+use std::process::{Command, exit};
 
 fn builtin_cd (args: &mut Iterator<Item=&str>) -> i32 {
     if let Some(path) = args.nth(0) {
@@ -39,6 +39,38 @@ fn builtin_ls (args: &mut Iterator<Item=&str>) -> i32 {
     }
 }
 
+fn do_command(command: &str, mut args: &mut Iterator<Item=&str>) -> i32 {
+    // List of exit commands
+    let exit_commands = vec!["exit", "logout", "bye"];
+    // Builtin functions
+    // TODO: WTF this dirty type conversion...
+    let builtin_commands: HashMap<_, _> = [
+        ("cd", &builtin_cd as &Fn(&mut Iterator<Item=&str>) -> i32),
+        ("ls", &builtin_ls),
+    ].iter().cloned().collect();
+
+    // Exit
+    if exit_commands.contains(&command) {
+        eprintln!("logout");
+        exit(0);
+    }
+    // Execute builtin function
+    if let Some(builtin_function) = builtin_commands.get(command) {
+        builtin_function(&mut args)
+    } else {
+        let child = Command::new(command)
+                            .args(args)
+                            .spawn();
+        match child {
+            Ok(mut child) => child.wait().unwrap().code().unwrap(),
+            Err(err) => {
+                eprintln!("{}", err.to_string());
+                127
+            }
+        }
+    }
+}
+
 fn read_eval_print() {
     // Show prompt
     print!("$ ");
@@ -49,31 +81,11 @@ fn read_eval_print() {
     io::stdin().read_line(&mut input).ok();
 
     // Evaluate
-    let exit_commands = vec!["exit", "logout", "bye"];
-    // Builtin functions
-    // TODO: WTF this dirty type conversion...
-    let builtin_commands: HashMap<_, _> = [
-        ("cd", &builtin_cd as &Fn(&mut Iterator<Item=&str>) -> i32),
-        ("ls", &builtin_ls),
-    ].iter().cloned().collect();
+    // Parse line and split
     let mut args = input.split_whitespace();
     // Do nothing if an empty line is given
     if let Some(command) = args.nth(0) {
-        // Exit
-        if exit_commands.contains(&command) {
-            eprintln!("logout");
-            exit(0);
-        }
-        // Execute builtin function
-        if let Some(builtin_function) = builtin_commands.get(command) {
-            builtin_function(&mut args);
-        } else {
-            // Echo command and arguments
-            eprintln!("{}", command);
-            for arg in args {
-                eprintln!("{}", arg)
-            }
-        }
+        do_command(command, &mut args);
     }
 }
 
